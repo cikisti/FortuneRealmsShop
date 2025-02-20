@@ -1,0 +1,111 @@
+using { /Fortnite.com/Devices }
+using { /Verse.org/Simulation }
+using { /UnrealEngine.com/Temporary/Diagnostics }
+using { /Fortnite.com/Characters }
+using { /Verse.org/Random}
+using { /Fortnite.com/Game }
+
+Game_Manager := class(creative_device):
+    var PlayersMap:[player]Custom_Player = map{}
+
+    @editable
+    GetYCardButton:button_device = button_device{}
+
+    @editable
+    MessageDevice:hud_message_device = hud_message_device{}
+
+    @editable
+    KarmaCreditsTimer:timer_device = timer_device{}
+
+    @editable
+    Collectible1:collectible_object_device = collectible_object_device{}
+
+    @editable
+    Collectible2:collectible_object_device = collectible_object_device{}
+
+    @editable
+    Collectible3:collectible_object_device = collectible_object_device{}
+
+    @editable
+    Collectible4:collectible_object_device = collectible_object_device{}
+
+    @editable
+    Collectible5:collectible_object_device = collectible_object_device{}
+
+    @editable
+    Collectible6:collectible_object_device = collectible_object_device{}
+
+    @editable
+    Collectible7:collectible_object_device = collectible_object_device{}
+
+    @editable
+    P1Spawner:player_spawner_device = player_spawner_device {}
+
+    @editable
+    CardTrigger:trigger_device = trigger_device {}
+
+    CollectibleValue:int = 678
+    TimerValue:int = 3
+
+    CardCost:int = 5000
+
+    OnBegin<override>()<suspends>:void=
+        P1Spawner.SpawnedEvent.Subscribe(OnPlayerAdded)
+        Collectible1.CollectedEvent.Subscribe(OnCollect)
+        Collectible2.CollectedEvent.Subscribe(OnCollect)
+        Collectible3.CollectedEvent.Subscribe(OnCollect)
+        Collectible4.CollectedEvent.Subscribe(OnCollect)
+        Collectible5.CollectedEvent.Subscribe(OnCollect)
+        Collectible6.CollectedEvent.Subscribe(OnCollect)
+        Collectible7.CollectedEvent.Subscribe(OnCollect)
+        GetYCardButton.InteractedWithEvent.Subscribe(OnCardButton)
+
+        KarmaCreditsTimer.SuccessEvent.Subscribe(OnKarmaCreditsTimer)
+
+    OnPlayerAdded(Agent:agent):void=
+        if:
+            PlayerObj := player[Agent]
+        then:
+            if(PlayerExists := PlayersMap[PlayerObj]):
+
+            else:
+                if:
+                    FC := Agent.GetFortCharacter[]
+                then:
+
+                    CustomPlayer:Custom_Player = Custom_Player{Player := Agent}
+                    option:
+                        set PlayersMap[PlayerObj] = CustomPlayer
+                    CustomPlayer.InitiateUI()
+
+    OnCardButton(Agent:agent):void=
+         if(PlayerObj := player[Agent]):
+            if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                 DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(CardCost)
+                 if(DoWeHaveEnough = true):
+                    CustomPlayer.RemoveKarmaCredits(CardCost)
+                    CardTrigger.Trigger(Agent)   
+                else:
+                    MessageDevice.Show(Agent)                
+
+    OnCollect(Agent:agent):void=
+        if(PlayerObj:=player[Agent]):
+            if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                CustomPlayer.AddKarmaCredits(CollectibleValue)
+
+    OnKarmaCreditsTimer(Agent: ?agent):void=
+        for(CustomPlayer : PlayersMap):
+            CustomPlayer.AddKarmaCredits(TimerValue)
+
+   
+            
+
+        block:
+
+
+
+
+        
+
+
+
