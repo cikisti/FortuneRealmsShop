@@ -8,14 +8,106 @@ using { /Fortnite.com/Game }
 Game_Manager := class(creative_device):
     var PlayersMap:[player]Custom_Player = map{}
 
+
+                                # Bindings and Device Links
+
+    # Player ID
+
+    @editable
+    P1Spawner:player_spawner_device = player_spawner_device {}
+
+    # Buying Bindings
+
     @editable
     GetYCardButton:button_device = button_device{}
+
+    # Card Activation Triggers
+
+    @editable
+    YCardTrigger:trigger_device = trigger_device {}
+
+    # Weapon Granters
+
+    @editable
+    PistolGranter:item_granter_device = item_granter_device {}
+
+    @editable
+    PistolAmmoGranter:item_granter_device = item_granter_device {}
+
+    @editable
+    ShotgunGranter:item_granter_device = item_granter_device {}
+
+    @editable
+    ShotgunAmmoGranter:item_granter_device = item_granter_device {}
+
+    @editable
+    SniperGranter:item_granter_device = item_granter_device {}
+
+    @editable
+    SniperAmmoGranter:item_granter_device = item_granter_device {}
+
+    @editable
+    KatanaGranter:item_granter_device = item_granter_device {}
+
+
+    # Weapon Buttons
+
+    @editable
+    PistolButton:button_device = button_device{}
+
+    @editable
+    PistolAmmoButton:button_device = button_device{}
+
+    @editable
+    ShotgunButton:button_device = button_device{}
+
+    @editable
+    ShotgunAmmoButton:button_device = button_device{}
+
+    @editable
+    SniperButton:button_device = button_device{}
+
+    @editable
+    SniperAmmoButton:button_device = button_device{}
+
+    @editable
+    KatanaButton:button_device = button_device{}
+
+    # Powerup Definitions
+
+    @editable
+    MedKitGranter:item_granter_device = item_granter_device {}
+
+    @editable
+    GlowActivation:visual_effect_powerup_device = visual_effect_powerup_device {}
+
+    @editable
+    DamageUpgrade:damage_amplifier_powerup_device = damage_amplifier_powerup_device {}
+
+
+
+    # Powerup Buttons
+
+    @editable
+    MedKitButton:button_device = button_device {}
+
+    @editable
+    GlowButton:button_device = button_device {}
+
+    @editable
+    DamageUpgradeButton:button_device = button_device {}
+
+
+
+    #Info Devices
 
     @editable
     MessageDevice:hud_message_device = hud_message_device{}
 
     @editable
     KarmaCreditsTimer:timer_device = timer_device{}
+
+    #Y Collectibles
 
     @editable
     Collectible1:collectible_object_device = collectible_object_device{}
@@ -39,18 +131,41 @@ Game_Manager := class(creative_device):
     Collectible7:collectible_object_device = collectible_object_device{}
 
     @editable
-    P1Spawner:player_spawner_device = player_spawner_device {}
+    AuraReward:stat_powerup_device = stat_powerup_device {}
 
-    @editable
-    CardTrigger:trigger_device = trigger_device {}
 
+
+    # Costs
     CollectibleValue:int = 678
-    TimerValue:int = 3
+    AuraRewardValue:int = 6000
+    CardCost:int = 10
 
-    CardCost:int = 5000
+    # Weapon Costs
+    PistolCost:int = 10
+    PistolAmmoCost:int = 5
+    ShotgunCost:int = 10
+    ShotgunAmmoCost:int = 5
+    SniperCost:int = 10
+    SniperAmmoCost:int = 5
+    KatanaCost:int = 10
+
+    # Powerup Cost
+    MedKitCost:int = 10
+    GlowCost:int = 10
+    DamageCost:int = 10
+    HealthUpgradeCost:int = 10
+
+
+    TimerValue:int = 7 
+
+    
 
     OnBegin<override>()<suspends>:void=
+
+        #Multiplayer settings
         P1Spawner.SpawnedEvent.Subscribe(OnPlayerAdded)
+
+        #Y Collectibles that grant Karma Credits
         Collectible1.CollectedEvent.Subscribe(OnCollect)
         Collectible2.CollectedEvent.Subscribe(OnCollect)
         Collectible3.CollectedEvent.Subscribe(OnCollect)
@@ -58,9 +173,37 @@ Game_Manager := class(creative_device):
         Collectible5.CollectedEvent.Subscribe(OnCollect)
         Collectible6.CollectedEvent.Subscribe(OnCollect)
         Collectible7.CollectedEvent.Subscribe(OnCollect)
+
+        AuraReward.ItemPickedUpEvent.Subscribe(RewardHouse)
+
+        # Buttons that Trigger Buying Added in Game Tracking
+
         GetYCardButton.InteractedWithEvent.Subscribe(OnCardButton)
 
+        PistolButton.InteractedWithEvent.Subscribe(PistolGrant)
+        PistolAmmoButton.InteractedWithEvent.Subscribe(PistolAmmoGrant)
+
+        ShotgunButton.InteractedWithEvent.Subscribe(ShotgunGrant)
+        ShotgunAmmoButton.InteractedWithEvent.Subscribe(ShotgunAmmoGrant)
+
+        SniperButton.InteractedWithEvent.Subscribe(SniperGrant)
+        SniperAmmoButton.InteractedWithEvent.Subscribe(SniperAmmoGrant)
+
+        KatanaButton.InteractedWithEvent.Subscribe(KatanaGrant)
+
+        MedKitButton.InteractedWithEvent.Subscribe(MedKitGrant)
+        GlowButton.InteractedWithEvent.Subscribe(GlowGrant)
+        DamageUpgradeButton.InteractedWithEvent.Subscribe(DamageGrant)
+
+
+        
+        # Timer
         KarmaCreditsTimer.SuccessEvent.Subscribe(OnKarmaCreditsTimer)
+
+
+        # Definitions and Actions
+    
+        #Player ID
 
     OnPlayerAdded(Agent:agent):void=
         if:
@@ -78,20 +221,151 @@ Game_Manager := class(creative_device):
                         set PlayersMap[PlayerObj] = CustomPlayer
                     CustomPlayer.InitiateUI()
 
+
+        # Card Buying Actions
     OnCardButton(Agent:agent):void=
          if(PlayerObj := player[Agent]):
             if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
                  DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(CardCost)
                  if(DoWeHaveEnough = true):
                     CustomPlayer.RemoveKarmaCredits(CardCost)
-                    CardTrigger.Trigger(Agent)   
+                    YCardTrigger.Trigger(Agent)   
                 else:
-                    MessageDevice.Show(Agent)                
+                    MessageDevice.Show(Agent)
+
+
+
+        # Weapon Buying Actions
+
+        # Pistol and Ammo
+
+    PistolGrant(Agent:agent):void=
+         if(PlayerObj := player[Agent]):
+            if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                 DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(PistolCost)
+                 if(DoWeHaveEnough = true):
+                    CustomPlayer.RemoveKarmaCredits(PistolCost)
+                    PistolGranter.GrantItem(Agent)
+                else:
+                    MessageDevice.Show(Agent)    
+
+    PistolAmmoGrant(Agent:agent):void=
+         if(PlayerObj := player[Agent]):
+            if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                 DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(PistolAmmoCost)
+                 if(DoWeHaveEnough = true):
+                    CustomPlayer.RemoveKarmaCredits(PistolAmmoCost)
+                    PistolAmmoGranter.GrantItem(Agent)
+                else:
+                    MessageDevice.Show(Agent) 
+
+
+        #Shotgun and Ammo
+
+    ShotgunGrant(Agent:agent):void=
+         if(PlayerObj := player[Agent]):
+            if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                 DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(ShotgunCost)
+                 if(DoWeHaveEnough = true):
+                    CustomPlayer.RemoveKarmaCredits(ShotgunCost)
+                    ShotgunGranter.GrantItem(Agent)
+                else:
+                    MessageDevice.Show(Agent)    
+
+    ShotgunAmmoGrant(Agent:agent):void=
+         if(PlayerObj := player[Agent]):
+            if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                 DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(ShotgunAmmoCost)
+                 if(DoWeHaveEnough = true):
+                    CustomPlayer.RemoveKarmaCredits(ShotgunAmmoCost)
+                    ShotgunAmmoGranter.GrantItem(Agent)
+                else:
+                    MessageDevice.Show(Agent) 
+                    
+        #Sniper and Ammo
+
+    SniperGrant(Agent:agent):void=
+            if(PlayerObj := player[Agent]):
+               if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                    DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(SniperCost)
+                    if(DoWeHaveEnough = true):
+                       CustomPlayer.RemoveKarmaCredits(SniperCost)
+                       SniperGranter.GrantItem(Agent)
+                   else:
+                       MessageDevice.Show(Agent)    
+   
+    SniperAmmoGrant(Agent:agent):void=
+            if(PlayerObj := player[Agent]):
+               if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                    DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(SniperAmmoCost)
+                    if(DoWeHaveEnough = true):
+                       CustomPlayer.RemoveKarmaCredits(SniperAmmoCost)
+                       SniperAmmoGranter.GrantItem(Agent)
+                   else:
+                       MessageDevice.Show(Agent) 
+
+
+        #Katana
+    KatanaGrant(Agent:agent):void=
+            if(PlayerObj := player[Agent]):
+               if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                    DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(KatanaCost)
+                    if(DoWeHaveEnough = true):
+                       CustomPlayer.RemoveKarmaCredits(KatanaCost)
+                       KatanaGranter.GrantItem(Agent)
+                   else:
+                       MessageDevice.Show(Agent)    
+
+        #MedKit
+    MedKitGrant(Agent:agent):void=
+            if(PlayerObj := player[Agent]):
+               if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                    DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(MedKitCost)
+                    if(DoWeHaveEnough = true):
+                       CustomPlayer.RemoveKarmaCredits(MedKitCost)
+                       MedKitGranter.GrantItem(Agent)
+                   else:
+                       MessageDevice.Show(Agent) 
+
+        #GlowPowerup
+    GlowGrant(Agent:agent):void=
+            if(PlayerObj := player[Agent]):
+               if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                    DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(GlowCost)
+                    if(DoWeHaveEnough = true):
+                       CustomPlayer.RemoveKarmaCredits(GlowCost)
+                       GlowActivation.Pickup(Agent)
+                   else:
+                       MessageDevice.Show(Agent) 
+        #DamagePowerup
+    DamageGrant(Agent:agent):void=
+            if(PlayerObj := player[Agent]):
+               if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                    DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(DamageCost)
+                    if(DoWeHaveEnough = true):
+                       CustomPlayer.RemoveKarmaCredits(DamageCost)
+                       DamageUpgrade.Pickup(Agent)
+                   else:
+                       MessageDevice.Show(Agent) 
+ 
+                       
+
+        #Y Collect Actions
 
     OnCollect(Agent:agent):void=
         if(PlayerObj:=player[Agent]):
             if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
                 CustomPlayer.AddKarmaCredits(CollectibleValue)
+
+    RewardHouse(Agent:agent):void=
+        if(PlayerObj:=player[Agent]):
+            if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                CustomPlayer.AddKarmaCredits(AuraRewardValue)
+
+
+
+        
+        # Karma Farm
 
     OnKarmaCreditsTimer(Agent: ?agent):void=
         for(CustomPlayer : PlayersMap):
