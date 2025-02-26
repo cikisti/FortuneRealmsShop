@@ -16,6 +16,12 @@ Custom_Player := class <unique>():
 
     var KarmaCreditsScoreText : text_block = text_block{}
     var KarmaCredits:int = 0
+    #Y card total number for array
+    var AvailableCardIndices: []int = array{1, 2, 3}
+    
+
+
+    
 
     InitiateUI():void=
         set KarmaCreditsScoreText = text_block{DefaultText := StringToMessage ("Aura: {KarmaCredits}"), DefaultTextColor:= NamedColors.White, DefaultShadowColor:=NamedColors.Purple}
@@ -44,6 +50,8 @@ Custom_Player := class <unique>():
 
             return UICanvas
 
+    
+
     AddKarmaCredits(Amount:int):void=
         set KarmaCredits += Amount
         UpdateUI()
@@ -57,6 +65,7 @@ Custom_Player := class <unique>():
             return false
         else:
             return true
+            
     UpdateUI():void=
         KarmaCreditsScoreText.SetText(StringToMessage("Aura: {KarmaCredits}"))
 
