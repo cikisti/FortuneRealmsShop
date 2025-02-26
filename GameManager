@@ -102,7 +102,7 @@ Game_Manager := class(creative_device):
     #Info Devices
 
     @editable
-    MessageDevice:hud_message_device = hud_message_device{}
+    NoAuraMessageDevice:hud_message_device = hud_message_device{}
 
     @editable
     KarmaCreditsTimer:timer_device = timer_device{}
@@ -131,36 +131,59 @@ Game_Manager := class(creative_device):
     Collectible7:collectible_object_device = collectible_object_device{}
 
     @editable
-    AuraReward:stat_powerup_device = stat_powerup_device {}
+    AuraReward:trigger_device = trigger_device {}
+
+    #Y Card Messages
+
+    @editable
+    YCardOne:trigger_device = trigger_device {}
+
+    @editable
+    YCardTwo:trigger_device = trigger_device {}
+
+    @editable
+    YCardThree:trigger_device = trigger_device {}
+
+    @editable
+    NoCardsAvailableMessageDevice:hud_message_device = hud_message_device{}
+
+    
+
+
 
 
 
     # Costs
     CollectibleValue:int = 678
-    AuraRewardValue:int = 6000
-    CardCost:int = 10
+    AuraRewardValue:int = 6
+    CardCost:int = 5
 
     # Weapon Costs
-    PistolCost:int = 10
+    PistolCost:int = 6
     PistolAmmoCost:int = 5
-    ShotgunCost:int = 10
-    ShotgunAmmoCost:int = 5
-    SniperCost:int = 10
-    SniperAmmoCost:int = 5
-    KatanaCost:int = 10
+    ShotgunCost:int = 8
+    ShotgunAmmoCost:int = 6
+    SniperCost:int = 1
+    SniperAmmoCost:int = 8
+    KatanaCost:int = 2
 
     # Powerup Cost
-    MedKitCost:int = 10
-    GlowCost:int = 10
-    DamageCost:int = 10
-    HealthUpgradeCost:int = 10
+    MedKitCost:int = 5
+    GlowCost:int = 16
+    DamageCost:int = 25
 
 
-    TimerValue:int = 7 
+    TimerValue:int = 34 
+
+   
+    
 
     
 
     OnBegin<override>()<suspends>:void=
+
+        #Y Cards
+       
 
         #Multiplayer settings
         P1Spawner.SpawnedEvent.Subscribe(OnPlayerAdded)
@@ -174,7 +197,7 @@ Game_Manager := class(creative_device):
         Collectible6.CollectedEvent.Subscribe(OnCollect)
         Collectible7.CollectedEvent.Subscribe(OnCollect)
 
-        AuraReward.ItemPickedUpEvent.Subscribe(RewardHouse)
+        AuraReward.TriggeredEvent.Subscribe(RewardHouse)
 
         # Buttons that Trigger Buying Added in Game Tracking
 
@@ -223,15 +246,40 @@ Game_Manager := class(creative_device):
 
 
         # Card Buying Actions
+
+
     OnCardButton(Agent:agent):void=
-         if(PlayerObj := player[Agent]):
-            if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
-                 DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(CardCost)
-                 if(DoWeHaveEnough = true):
-                    CustomPlayer.RemoveKarmaCredits(CardCost)
-                    YCardTrigger.Trigger(Agent)   
+        if (PlayerObj := player[Agent]):
+            if (CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
+                if (CustomPlayer.AvailableCardIndices.Length = 0):
+                    NoCardsAvailableMessageDevice.Show(Agent)
                 else:
-                    MessageDevice.Show(Agent)
+                    DoWeHaveEnough:logic = CustomPlayer.CheckKarmaCredits(CardCost)
+                    if (DoWeHaveEnough = true):
+                        # Pick a random index from the available cards
+                        RandomIndex:int = GetRandomInt(0, CustomPlayer.AvailableCardIndices.Length - 1)
+                        if (CardIndex := CustomPlayer.AvailableCardIndices[RandomIndex]):
+                            # Show the corresponding card
+                            if (CardIndex = 1):
+                                YCardOne.Trigger(Agent)
+                            else if (CardIndex = 2):
+                                YCardTwo.Trigger(Agent)
+                            else if (CardIndex = 3):
+                                YCardThree.Trigger(Agent)
+                            
+                            # Remove the drawn card from the array
+                            if (NewIndices := CustomPlayer.AvailableCardIndices.RemoveElement[RandomIndex]):
+                                set CustomPlayer.AvailableCardIndices = NewIndices
+                            
+                            # Deduct Karma Credits
+                            CustomPlayer.RemoveKarmaCredits(CardCost)
+                        else:
+                            NoCardsAvailableMessageDevice.Show(Agent)
+                    else:
+                        NoAuraMessageDevice.Show(Agent)
+
+
+
 
 
 
@@ -247,7 +295,7 @@ Game_Manager := class(creative_device):
                     CustomPlayer.RemoveKarmaCredits(PistolCost)
                     PistolGranter.GrantItem(Agent)
                 else:
-                    MessageDevice.Show(Agent)    
+                    NoAuraMessageDevice.Show(Agent)    
 
     PistolAmmoGrant(Agent:agent):void=
          if(PlayerObj := player[Agent]):
@@ -257,7 +305,7 @@ Game_Manager := class(creative_device):
                     CustomPlayer.RemoveKarmaCredits(PistolAmmoCost)
                     PistolAmmoGranter.GrantItem(Agent)
                 else:
-                    MessageDevice.Show(Agent) 
+                    NoAuraMessageDevice.Show(Agent) 
 
 
         #Shotgun and Ammo
@@ -270,7 +318,7 @@ Game_Manager := class(creative_device):
                     CustomPlayer.RemoveKarmaCredits(ShotgunCost)
                     ShotgunGranter.GrantItem(Agent)
                 else:
-                    MessageDevice.Show(Agent)    
+                    NoAuraMessageDevice.Show(Agent)    
 
     ShotgunAmmoGrant(Agent:agent):void=
          if(PlayerObj := player[Agent]):
@@ -280,7 +328,7 @@ Game_Manager := class(creative_device):
                     CustomPlayer.RemoveKarmaCredits(ShotgunAmmoCost)
                     ShotgunAmmoGranter.GrantItem(Agent)
                 else:
-                    MessageDevice.Show(Agent) 
+                    NoAuraMessageDevice.Show(Agent) 
                     
         #Sniper and Ammo
 
@@ -292,7 +340,7 @@ Game_Manager := class(creative_device):
                        CustomPlayer.RemoveKarmaCredits(SniperCost)
                        SniperGranter.GrantItem(Agent)
                    else:
-                       MessageDevice.Show(Agent)    
+                       NoAuraMessageDevice.Show(Agent)    
    
     SniperAmmoGrant(Agent:agent):void=
             if(PlayerObj := player[Agent]):
@@ -302,7 +350,7 @@ Game_Manager := class(creative_device):
                        CustomPlayer.RemoveKarmaCredits(SniperAmmoCost)
                        SniperAmmoGranter.GrantItem(Agent)
                    else:
-                       MessageDevice.Show(Agent) 
+                       NoAuraMessageDevice.Show(Agent) 
 
 
         #Katana
@@ -314,7 +362,7 @@ Game_Manager := class(creative_device):
                        CustomPlayer.RemoveKarmaCredits(KatanaCost)
                        KatanaGranter.GrantItem(Agent)
                    else:
-                       MessageDevice.Show(Agent)    
+                       NoAuraMessageDevice.Show(Agent)    
 
         #MedKit
     MedKitGrant(Agent:agent):void=
@@ -325,7 +373,7 @@ Game_Manager := class(creative_device):
                        CustomPlayer.RemoveKarmaCredits(MedKitCost)
                        MedKitGranter.GrantItem(Agent)
                    else:
-                       MessageDevice.Show(Agent) 
+                       NoAuraMessageDevice.Show(Agent) 
 
         #GlowPowerup
     GlowGrant(Agent:agent):void=
@@ -336,7 +384,7 @@ Game_Manager := class(creative_device):
                        CustomPlayer.RemoveKarmaCredits(GlowCost)
                        GlowActivation.Pickup(Agent)
                    else:
-                       MessageDevice.Show(Agent) 
+                       NoAuraMessageDevice.Show(Agent) 
         #DamagePowerup
     DamageGrant(Agent:agent):void=
             if(PlayerObj := player[Agent]):
@@ -346,7 +394,7 @@ Game_Manager := class(creative_device):
                        CustomPlayer.RemoveKarmaCredits(DamageCost)
                        DamageUpgrade.Pickup(Agent)
                    else:
-                       MessageDevice.Show(Agent) 
+                       NoAuraMessageDevice.Show(Agent) 
  
                        
 
@@ -357,11 +405,6 @@ Game_Manager := class(creative_device):
             if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
                 CustomPlayer.AddKarmaCredits(CollectibleValue)
 
-    RewardHouse(Agent:agent):void=
-        if(PlayerObj:=player[Agent]):
-            if(CustomPlayer:Custom_Player = PlayersMap[PlayerObj]):
-                CustomPlayer.AddKarmaCredits(AuraRewardValue)
-
 
 
         
@@ -370,6 +413,11 @@ Game_Manager := class(creative_device):
     OnKarmaCreditsTimer(Agent: ?agent):void=
         for(CustomPlayer : PlayersMap):
             CustomPlayer.AddKarmaCredits(TimerValue)
+            
+
+    RewardHouse(Agent: ?agent):void=
+        for(CustomPlayer : PlayersMap):
+            CustomPlayer.AddKarmaCredits(AuraRewardValue)
 
    
             
